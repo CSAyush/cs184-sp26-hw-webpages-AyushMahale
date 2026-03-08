@@ -1,0 +1,243 @@
+<html>
+	<head>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+		<style>
+			h1 {
+				text-align: center;
+			}
+
+			.container {
+				margin: 0 auto;
+				padding: 60px 20%;
+			}
+
+			figure {
+				text-align: center;
+			}
+
+			img {
+				display: inline-block;
+			}
+
+			body {
+				font-family: 'Inter', sans-serif;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+		<h1>CS184/284A Spring 2025 Homework 2 Write-Up</h1>
+		<div style="text-align: center;">Names: Ayush Mahale, Amitoj Wadhwa</div>
+
+		<br>
+
+		Link to webpage: <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+
+		<br>
+		
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/hw2-meshedit-jeffstein.git">https://github.com/cal-cs184-student/hw2-meshedit-jeffstein.git</a>
+
+		<figure>
+			<img src="images/teapot.png" alt="Teapot" style="width:50%"/>
+			<figcaption>You can add images with captions!</figcaption>
+		</figure>
+
+		<!--
+		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
+		-->
+
+		<h2>Overview</h2>
+		In this homework, we implemented algorithms for geometric modeling and mesh processing. We implemented algorithms like Casteljau subdivision for Bezier curves and extended the algorithm to analyze Bezier surfaces. We also implemented some fundamental operations for mesh editing like edge flips and edge splits to alter mesh connectivity. We also covered Loop subdivision, which allows us to refine triangle meshes and generate smoother surfaces with methods like edge splitting and edge flipping. 
+
+		<h2>Section I: Bezier Curves and Surfaces</h2>
+
+		<h3>Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+
+		<p> For this, I implemented part 1 of the Casteljau subdivision in the function std::vector<Vector2D> BezierCurve::evaluateStep(). 
+			The function takes in a vector of control points and a parameter t. 
+			The function does linear interpolation in pairs of control points and computes the next level of intermediate points.
+		</p>
+		
+		<p> The interpolation formula used at each step is this:
+			\[
+			p_i' = (1-t)p_i + tp_{i+1}.
+			\]
+			A single call to the evaluateStep function will perform one level of the algorithm, which reduces the n length vector of control points to n-1 intermediate points. 
+			When we do this n-1 times, we end up with a single point on the Bezier curve at our chosen t value. 
+			This procedure in seen in my implementation where I loop over the control points and compute the intermediate point for each pair, and a new vector is returned, whose length is 1 less than the initial vector.
+		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/step0.png" width="400px"/>
+				  <figcaption>Initial control polygon.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/step1.png" width="400px"/>
+				  <figcaption>First interpolation step.</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/step2.png" width="400px"/>
+				  <figcaption>Second interpolation step.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/step3.png" width="400px"/>
+				  <figcaption>Last evaluated point on curve.</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<figure>
+		<img src="images/step4.png" width="400px"/>
+		<figcaption>Final Bezier curve with intermediate construction.</figcaption>
+		</figure>
+
+		<h3>Part 2: Bezier surfaces with separable 1D de Casteljau</h3>
+		<p> For part 2, I applied de Casteljau evaluation from simply Bezier curves to Bezier
+			surfaces too. We define a bezier patch by an nxn grid of control points.
+			To evaluate the surface at parameters u and v, I used separable 1D de
+			Casteljau subdivision. My approach was to first evaluate each row of control points as a Bezier curve at
+			parameter u. This produced one intermediate point for every row. I then stored these
+			intermediate points in a vector called temprowpts. Then I evaluated this
+			new list of points again using de Casteljau at parameter v. This gives the final result
+			of a single point on the Bezier surface at (u,v).
+		</p>
+		<figure>
+			<img src="images/part2.png" style="width:500px"/>
+			<figcaption>Generated Bezier surface</figcaption>
+		</figure>
+
+		<h2>Section II: Triangle Meshes and Half-Edge Data Structure</h2>
+
+		<h3>Part 3: Area-weighted vertex normals</h3>
+		<p> For this part, to compute area-weighted vertex normals, I implemented the Vertex::normal() function, where I iterated over all the adjacent faces to a vertex using the half-edge structure. 
+			We start at the vertex’s outgoing halfedge, and then visit its neighboring faces using twin()->next(). 
+			For every triangle, I computed two edge vectors and took their cross product to get the face normal. 
+			Magnitude of the cross product and triangle’s area are proportionsal, so when we sum the normals, it naturally weights them by area. 
+			The final vector we get is then normalized to produce the vertex normal.</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				<tr>
+				<td style="text-align: center;">
+					<img src="images/part3_1.png" width="400px"/>
+					<figcaption>Teapot with default flat shading.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="images/part3_2.png" width="400px"/>
+					<figcaption>Teapot with Phong shading.</figcaption>
+				</td>
+				</tr>
+			</table>
+		</div>
+		<h3>Part 4: Edge flip</h3>
+		<p> I implemented edge flip by altering the connectivity of the two triangles that share the edge that will be flipped. 
+			Since we have the half edge structure, I used it to gather the six halfedges surrounding the two adjacent faces, 
+			and their associated vertices, edges, and faces. Flipping the edge replaces the shared edge between 
+			the triangles with the opposite diagonal. So, I reassigned the halfedge next, twin, vertex, edge, and face 
+			pointers accordingly. We also need to check if an edge is a boundary edge or not because boundary 
+			edges cannot be flipped. In the case where we try flipping a boundary edge, the original edge is returned.
+			I didn't face many debugging issues, but the most helpful thing I did was drawing the local configuration of the six halfedges 
+			and labeling them before changing any pointers. This helped ensure that all next and twin relationships 
+			remained consistent, otherwise it's really easy to accidentally mess up the relationships.
+			</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				<tr>
+				<td style="text-align: center;">
+					<img src="images/part4_1.png" width="400px"/>
+					<figcaption>Default teapot.</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="images/part4_2.png" width="400px"/>
+					<figcaption>Teapot with 5 edges flipped.</figcaption>
+				</td>
+				</tr>
+			</table>
+		</div>
+		<h3>Part 5: Edge split</h3>
+		<p> For this part, I implemented edge splitting. For edge splitting, I insert a new vertex at the midpoint of the selected edge and then update the local connectivity of the mesh. 
+			Edge splitting replaces the two triangles adjacent to the edge with four triangles, since the split is done at the middle of an edge. 
+			I first collected the six surrounding halfedges, vertices, edges, and faces, then created the new vertex, edges, faces, and halfedges that are needed for the split. 
+			The new vertex position is the midpoint of the two original edge vertices, which essentially splits the edge. 
+			I updated all the next, twin, vertex, edge, and face pointers to maintain our half edge structure.
+			</p>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+					<tr>
+					<td style="text-align: center;">
+						<img src="images/part5_1.png" width="400px"/>
+						<figcaption>Default teapot.</figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/part5_2.png" width="400px"/>
+						<figcaption>Teapot with edge splits.</figcaption>
+					</td>
+					</tr>
+				</table>
+			</div>
+			<figure>
+				<img src="images/part5_3.png" width="400px"/>
+				<figcaption>Teapot with edge splits and edge flips</figcaption>
+			</figure>
+		<h3>Part 6: Loop subdivision for mesh upsampling</h3>
+		<p> For this part, I implemented Loop subdivision. First, I computed updated positions of all the original vertices and edge midpoints. 
+			For every old vertex, I used the Loop subdivision weighting rule based on its valence. 
+			And for every old edge, I computed the new midpoint position by using the two edge endpoints and using the opposite triangle vertices.
+			After computing these positions, I split each original edge, also marking the newly inserted vertices. 
+			I then flipped every new edge that connected an old vertex to a new vertex. This allows Loop subdivision connectivity. 
+			Then I copied each vertex’s newPosition (which contains the updated positions of all original vertices and edge midpoints) into its final position.
+			</p>
+			
+		<p> After doing more subdivisions (around 3 is when it starts to smoothen out), the cube becomes smoother and approaches a roughly round shape. 
+			The sharp corners and edges smoothed out because the subdivision algorithm averages neighboring positions and pulls vertices inward when we do a subdivision. 
+			Interestingly, I noticed that the cube becomes slightly asymmetric after some (around 4) subdivisions, which is due to our initial triangulation and edge structure.
+			</p>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+					<tr>
+					<td style="text-align: center;">
+						<img src="images/part6_1.png" width="400px"/>
+						<figcaption>Default cube.</figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/part6_2.png" width="400px"/>
+						<figcaption>Cube after 1 subdivision</figcaption>
+					</td>
+					</tr>
+				</table>
+			</div>
+			<figure>
+				<img src="images/part6_3.png" width="400px"/>
+				<figcaption>Cube after 5 subdivisions</figcaption>
+			</figure>
+		
+		<h3>Part 6: Extra Credit task of supporting meshes with boundary</h3>
+		<p> For the extra credit task, we must support meshes with boundary. I tested my boundary handling on the teapot instead of the cube since cube is not a boundary mesh. 
+			I applied Loop subdivision to the teapot and observed the bottom boundary loop. 
+			After Loop subdivision, the mesh density increases and the boundary ring becomes much smoother and the overall shape is maintained. 
+			Especially because we don't see any spikes near the boundary, indicating that the boundary update rules are working correctly.</p>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse;">
+					<tr>
+					<td style="text-align: center;">
+						<img src="images/part6_1_ec.png" width="400px"/>
+						<figcaption>Default teapot mesh.</figcaption>
+					</td>
+					<td style="text-align: center;">
+						<img src="images/part6_2_ec.png" width="400px"/>
+						<figcaption>Teapot mesh after 1 subdivision.</figcaption>
+					</td>
+					</tr>
+				</table>
+			</div>
+			<figure>
+				<img src="images/part6_3_ec.png" width="400px"/>
+				<figcaption>Teapot mesh after 2 subdivisions</figcaption>
+			</figure>
+		</div>
+	</body>
+</html>
